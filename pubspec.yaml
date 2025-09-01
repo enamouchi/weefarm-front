@@ -1,0 +1,80 @@
+name: weefarm
+description: WeeFarm - Tunisian Agricultural Marketplace
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management & Routing
+  get: ^4.6.6
+  get_storage: ^2.1.1
+  
+  # JSON Serialization
+  json_annotation: ^4.9.0
+  
+  # HTTP Client & Networking
+  http: ^1.2.1
+  dio: ^5.3.0
+  dio_cache_interceptor: ^4.0.3
+  
+  # Image Handling
+  image_picker: ^1.0.4
+  cached_network_image: ^3.3.0
+  
+  # UI & Design
+  flutter_svg: ^2.0.7
+  shimmer: ^3.0.0
+  pull_to_refresh: ^2.0.0
+  flutter_staggered_grid_view: ^0.7.0
+  
+  # Localization & RTL Support
+  intl: ^0.20.2
+  
+  # Maps (for location display)
+  google_maps_flutter: ^2.5.0
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
+  
+  # Permissions
+  permission_handler: ^12.0.1
+  
+  # Utilities
+  uuid: ^4.1.0
+  timeago: ^3.6.1
+  url_launcher: ^6.2.1
+  share_plus: ^11.1.0
+  
+  # Validation
+  form_builder_validators: ^11.2.0
+  
+  # Icons
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.9
+  json_serializable: ^6.8.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/logos/
+  
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: fonts/Cairo-Regular.ttf
+        - asset: fonts/Cairo-Bold.ttf
+          weight: 700
+        - asset: fonts/Cairo-SemiBold.ttf
+          weight: 600
