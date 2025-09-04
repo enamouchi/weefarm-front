@@ -220,10 +220,8 @@ class _LocationSelectorState extends State<LocationSelector> {
       setState(() {
         isLoadingGovernorates = true;
       });
-      print("===> Gathering locations");
       final apiService = Get.find<ApiService>();
       final response = await apiService.get('/auth/locations');
-      print("===> Done");
       
       if (response.statusCode == 200 && response.data['locations'] != null) {
         final locationsList = (response.data['locations'] as List)

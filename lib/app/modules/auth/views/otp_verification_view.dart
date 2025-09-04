@@ -298,9 +298,6 @@ class OtpVerificationView extends GetView<AuthController> {
   
   void _handleVerify() {
     final otp = controller.otpController.text.trim();
-    print("==> otp");
-    print(otp);
-    print("==> done");
     // TODO: FIXME
 
     // if (otp.length != 6) {
@@ -313,7 +310,6 @@ class OtpVerificationView extends GetView<AuthController> {
     //   return;
     // }
 
-    print("==> logging in ");
     controller.login();
   }
 }

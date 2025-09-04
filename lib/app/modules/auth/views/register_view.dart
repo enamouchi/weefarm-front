@@ -348,9 +348,6 @@ Widget _buildLocationSection() {
 void _handleRegister() {
   if (controller.registerFormKey.currentState!.validate()) {
     // CORRECTION : Vérification nullable avec safe access
-    print("==> selected gov");
-    print(controller.selectedGovernorate.value);
-    print("==> done");
     if (controller.selectedGovernorate.value == null || 
         controller.selectedGovernorate.value!.isEmpty) {
       Get.snackbar(
