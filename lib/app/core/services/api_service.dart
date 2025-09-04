@@ -6,7 +6,8 @@ import 'storage_service.dart';
 
 class ApiService extends getx.GetxService {
   late final Dio _dio;
-  final String baseUrl = 'http://10.0.2.2:3000/api/v1'; // Update with your actual IP
+  // final String baseUrl = 'http://10.0.2.2:3000/api/v1'; // Update with your actual IP
+  final String baseUrl = 'http://127.0.0.1:3000/api/v1';
   
   // Get storage service instance
   StorageService get _storage => getx.Get.find<StorageService>();
