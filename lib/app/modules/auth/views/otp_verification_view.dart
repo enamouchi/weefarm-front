@@ -298,16 +298,18 @@ class OtpVerificationView extends GetView<AuthController> {
   
   void _handleVerify() {
     final otp = controller.otpController.text.trim();
-    if (otp.length != 6) {
-      Get.snackbar(
-        'error'.tr,
-        'enter_complete_otp'.tr,
-        backgroundColor: AppColors.error,
-        colorText: AppColors.white,
-      );
-      return;
-    }
-    
+    // TODO: FIXME
+
+    // if (otp.length != 6) {
+    //   Get.snackbar(
+    //     'error'.tr,
+    //     'enter_complete_otp'.tr,
+    //     backgroundColor: AppColors.error,
+    //     colorText: AppColors.white,
+    //   );
+    //   return;
+    // }
+
     controller.login();
   }
 }

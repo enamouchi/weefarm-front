@@ -211,11 +211,15 @@ class RegisterView extends GetView<AuthController> {
   Widget _buildEmailField() {
     return CustomTextField(
       controller: controller.emailController,
-      label: 'email'.tr + ' (' + 'optional'.tr + ')',
+      // label: 'email'.tr + ' (' + 'optional'.tr + ')',
+      label: 'email'.tr,
       hint: 'enter_email'.tr,
       prefixIcon: Icons.email_outlined,
       keyboardType: TextInputType.emailAddress,
       validator: (value) {
+        if (value == null) {
+          return 'email is required'.tr;
+        }
         if (value != null && value.trim().isNotEmpty && !GetUtils.isEmail(value)) {
           return 'invalid_email'.tr;
         }
@@ -325,13 +329,13 @@ Widget _buildLocationSection() {
         onLocationSelected: (governorate, delegation) {
           // CORRECTION : Convertir TunisianLocation/TunisianDelegation en String
           if (governorate != null) {
-            controller.selectedGovernorate.value = governorate.nameEn; // ou nameAr/nameFr selon vos besoins
+            controller.selectedGovernorate.value = governorate.nameFr; // ou nameAr/nameFr selon vos besoins
           } else {
             controller.selectedGovernorate.value = null;
           }
           
           if (delegation != null) {
-            controller.selectedDelegation.value = delegation.nameEn; // ou nameAr/nameFr selon vos besoins
+            controller.selectedDelegation.value = delegation.nameFr; // ou nameAr/nameFr selon vos besoins
           } else {
             controller.selectedDelegation.value = null;
           }
