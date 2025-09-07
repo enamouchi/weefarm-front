@@ -45,4 +45,8 @@ class Routes {
   static const String NOTIFICATIONS = '/notifications';
   static const String SEARCH = '/search';
   static const String LOCATION_PICKER = '/location-picker';
+  // AI & Dashboard Routes
+  static const String SMART_DASHBOARD = '/smart-dashboard';
+  static const String AI_ASSISTANT = '/ai-assistant';
+  static const String PLANT_SCANNER = '/plant-scanner';
 }

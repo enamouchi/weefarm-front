@@ -3,15 +3,17 @@ import 'package:get/get.dart' as getx;
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'storage_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:convert';
 
 class ApiService extends getx.GetxService {
   late final Dio _dio;
-  // final String baseUrl = 'http://10.0.2.2:3000/api/v1'; // Update with your actual IP
-  final String baseUrl = 'http://127.0.0.1:3000/api/v1';
+  // FIXED: Changed baseUrl to work with AI endpoints
+  final String baseUrl = 'http://127.0.0.1:3000/api';
   
   // Get storage service instance
   StorageService get _storage => getx.Get.find<StorageService>();
-  
   
   @override
   void onInit() {
@@ -110,9 +112,9 @@ class ApiService extends getx.GetxService {
       }
       
       final response = await _dio.post(
-        '/auth/refresh',
+        '/v1/auth/refresh', // Updated path for existing auth
         data: {'refreshToken': refreshToken},
-        options: Options(headers: {'Authorization': null}), // Remove auth header for refresh
+        options: Options(headers: {'Authorization': null}),
       );
       
       if (response.statusCode == 200 && response.data['tokens'] != null) {
@@ -158,23 +160,25 @@ class ApiService extends getx.GetxService {
       throw _handleDioError(e);
     }
   }
+
   Future<Response<T>> post<T>(
-  String path, {
-  dynamic data,
-  Map<String, dynamic>? queryParameters,
-  Options? options,
-}) async {
-  try {
-    return await _dio.post<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
-  } on DioException catch (e) {
-    throw _handleDioError(e);
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.post<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
-}
+
   Future<Response<T>> put<T>(
     String path, {
     dynamic data,
@@ -229,8 +233,8 @@ class ApiService extends getx.GetxService {
     }
   }
   
-  // Multipart file upload
-  Future<Response<T>> postMultipart<T>(
+  // Multipart file upload using Dio (FIXED VERSION)
+  Future<Response<T>> postMultipartDio<T>(
     String path, {
     required FormData formData,
     Map<String, dynamic>? queryParameters,
@@ -273,7 +277,42 @@ class ApiService extends getx.GetxService {
       throw _handleDioError(e);
     }
   }
-  
+
+  // FIXED: Simple multipart upload for AI features
+  Future<dynamic> postMultipart(String endpoint, File file, String field) async {
+    try {
+      // Create FormData for Dio
+      final formData = FormData.fromMap({
+        field: await MultipartFile.fromFile(
+          file.path,
+          filename: file.path.split('/').last,
+        ),
+      });
+
+      final response = await _dio.post(
+        endpoint,
+        data: formData,
+        options: Options(
+          headers: {'Content-Type': 'multipart/form-data'},
+        ),
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // FIXED: Add missing helper methods
+  Future<Map<String, String>> getHeaders() async {
+    final token = _storage.accessToken;
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
   // Error handling
   ApiException _handleDioError(DioException e) {
     switch (e.type) {
@@ -332,7 +371,7 @@ class ApiService extends getx.GetxService {
     
     // Remove leading slash if present
     final cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    return '${baseUrl.replaceAll('/api/v1', '')}/$cleanPath';
+    return '${baseUrl.replaceAll('/api', '')}/$cleanPath';
   }
   
   // Helper method to create FormData with files
@@ -372,7 +411,6 @@ class ApiService extends getx.GetxService {
     return formData;
   }
 }
-
 
 class ApiException implements Exception {
   final String message;
