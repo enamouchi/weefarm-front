@@ -15,14 +15,14 @@ UserModel _$UserModelFromJson(Map<String, dynamic> json) => UserModel(
   role: $enumDecode(_$UserRoleEnumMap, json['role']),
   governorate: json['governorate'] as String?,
   municipality: json['municipality'] as String?,
-  lat: (json['lat'] as num?)?.toDouble(),
-  lng: (json['lng'] as num?)?.toDouble(),
+  lat: UserModel._stringToDouble(json['lat']),
+  lng: UserModel._stringToDouble(json['lng']),
   isActive: json['isActive'] as bool,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   bio: json['bio'] as String?,
-  farmSize: (json['farmSize'] as num?)?.toDouble(),
-  experience: (json['experience'] as num?)?.toInt(),
+  farmSize: UserModel._stringToDouble(json['farmSize']),
+  experience: UserModel._stringToInt(json['experience']),
   specialization: (json['specialization'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
@@ -30,9 +30,9 @@ UserModel _$UserModelFromJson(Map<String, dynamic> json) => UserModel(
       ?.map((e) => e as String)
       .toList(),
   isVerified: json['isVerified'] as bool?,
-  rating: (json['rating'] as num?)?.toDouble(),
-  reviewsCount: (json['reviewsCount'] as num?)?.toInt(),
-  totalSales: (json['totalSales'] as num?)?.toDouble(),
+  rating: UserModel._stringToDouble(json['rating']),
+  reviewsCount: UserModel._stringToInt(json['reviewsCount']),
+  totalSales: UserModel._stringToDouble(json['totalSales']),
 );
 
 Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
@@ -67,36 +67,15 @@ const _$UserRoleEnumMap = {
   UserRole.company: 'company',
 };
 
-LoginResponse _$LoginResponseFromJson(Map<String, dynamic> json) =>
-    LoginResponse(
-      message: json['message'] as String,
-      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
-      tokens: AuthTokens.fromJson(json['tokens'] as Map<String, dynamic>),
-    );
-
-Map<String, dynamic> _$LoginResponseToJson(LoginResponse instance) =>
-    <String, dynamic>{
-      'message': instance.message,
-      'user': instance.user,
-      'tokens': instance.tokens,
-    };
-
-AuthTokens _$AuthTokensFromJson(Map<String, dynamic> json) => AuthTokens(
-  accessToken: json['accessToken'] as String,
-  refreshToken: json['refreshToken'] as String,
-);
-
-Map<String, dynamic> _$AuthTokensToJson(AuthTokens instance) =>
-    <String, dynamic>{
-      'accessToken': instance.accessToken,
-      'refreshToken': instance.refreshToken,
-    };
-
 TunisianLocation _$TunisianLocationFromJson(Map<String, dynamic> json) =>
     TunisianLocation(
       id: (json['id'] as num).toInt(),
-      nameAr: json['nameAr'] as String,
-      nameFr: json['nameFr'] as String,
+      nameAr: json['name_ar'] as String,
+      nameFr: json['name_fr'] as String,
+      nameEn: json['name_en'] as String,
+      code: json['code'] as String,
+      lat: TunisianLocation._stringToDouble(json['lat']),
+      lng: TunisianLocation._stringToDouble(json['lng']),
       delegations: (json['delegations'] as List<dynamic>?)
           ?.map((e) => TunisianDelegation.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -105,23 +84,31 @@ TunisianLocation _$TunisianLocationFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$TunisianLocationToJson(TunisianLocation instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'nameAr': instance.nameAr,
-      'nameFr': instance.nameFr,
+      'name_ar': instance.nameAr,
+      'name_fr': instance.nameFr,
+      'name_en': instance.nameEn,
+      'code': instance.code,
+      'lat': instance.lat,
+      'lng': instance.lng,
       'delegations': instance.delegations,
     };
 
 TunisianDelegation _$TunisianDelegationFromJson(Map<String, dynamic> json) =>
     TunisianDelegation(
       id: (json['id'] as num).toInt(),
-      nameAr: json['nameAr'] as String,
-      nameFr: json['nameFr'] as String,
-      governorateId: (json['governorateId'] as num).toInt(),
+      nameAr: json['name_ar'] as String,
+      nameFr: json['name_fr'] as String,
+      nameEn: json['name_en'] as String,
+      lat: TunisianDelegation._stringToDouble(json['lat']),
+      lng: TunisianDelegation._stringToDouble(json['lng']),
     );
 
 Map<String, dynamic> _$TunisianDelegationToJson(TunisianDelegation instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'nameAr': instance.nameAr,
-      'nameFr': instance.nameFr,
-      'governorateId': instance.governorateId,
+      'name_ar': instance.nameAr,
+      'name_fr': instance.nameFr,
+      'name_en': instance.nameEn,
+      'lat': instance.lat,
+      'lng': instance.lng,
     };

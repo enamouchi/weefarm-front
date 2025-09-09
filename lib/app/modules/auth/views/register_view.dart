@@ -7,6 +7,7 @@ import '../controllers/auth_controller.dart';
 import '../../../core/values/app_colors.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_text_field.dart';
+import '../../../widgets/phone_input_field.dart'; // Import the new phone input
 import '../../../widgets/locations_selector.dart';
 import '../../../routes/app_routes.dart';
 
@@ -48,7 +49,7 @@ class RegisterView extends GetView<AuthController> {
               
               const SizedBox(height: 16),
               
-              // Phone Field
+              // Phone Field - Updated to use PhoneInputField
               _buildPhoneField(),
               
               const SizedBox(height: 16),
@@ -181,45 +182,20 @@ class RegisterView extends GetView<AuthController> {
   }
   
   Widget _buildPhoneField() {
-    return CustomTextField(
+    return PhoneInputField(
       controller: controller.phoneController,
       label: 'phone_number'.tr,
-      hint: 'phone_format'.tr,
-      prefixIcon: Icons.phone_outlined,
-      keyboardType: TextInputType.phone,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'field_required'.tr;
-        }
-        if (!GetUtils.isPhoneNumber(value)) {
-          return 'invalid_phone'.tr;
-        }
-        // Tunisia phone number validation
-        if (!RegExp(r'^\+216[0-9]{8}$').hasMatch(value.replaceAll(' ', ''))) {
-          return 'invalid_tunisia_phone'.tr;
-        }
-        return null;
-      },
-      textInputAction: TextInputAction.next,
-      onChanged: (value) {
-        // Format phone number as user types
-        controller.formatPhoneNumber(value);
-      },
     );
   }
   
   Widget _buildEmailField() {
     return CustomTextField(
       controller: controller.emailController,
-      // label: 'email'.tr + ' (' + 'optional'.tr + ')',
-      label: 'email'.tr,
+      label: 'email'.tr + ' (' + 'optional'.tr + ')',
       hint: 'enter_email'.tr,
       prefixIcon: Icons.email_outlined,
       keyboardType: TextInputType.emailAddress,
       validator: (value) {
-        if (value == null) {
-          return 'email is required'.tr;
-        }
         if (value != null && value.trim().isNotEmpty && !GetUtils.isEmail(value)) {
           return 'invalid_email'.tr;
         }
@@ -314,54 +290,41 @@ class RegisterView extends GetView<AuthController> {
     );
   }
   
-Widget _buildLocationSection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'location'.tr,
-        style: Get.textTheme.labelLarge?.copyWith(
-          color: AppColors.black,
+  Widget _buildLocationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'location'.tr,
+          style: Get.textTheme.labelLarge?.copyWith(
+            color: AppColors.black,
+          ),
         ),
-      ),
-      const SizedBox(height: 12),
-      LocationSelector(
-        onLocationSelected: (governorate, delegation) {
-          // CORRECTION : Convertir TunisianLocation/TunisianDelegation en String
-          if (governorate != null) {
-            controller.selectedGovernorate.value = governorate.nameFr; // ou nameAr/nameFr selon vos besoins
-          } else {
-            controller.selectedGovernorate.value = null;
-          }
-          
-          if (delegation != null) {
-            controller.selectedDelegation.value = delegation.nameFr; // ou nameAr/nameFr selon vos besoins
-          } else {
-            controller.selectedDelegation.value = null;
-          }
-        },
-      ),
-    ],
-  );
-}
-
-void _handleRegister() {
-  if (controller.registerFormKey.currentState!.validate()) {
-    // CORRECTION : Vérification nullable avec safe access
-    if (controller.selectedGovernorate.value == null || 
-        controller.selectedGovernorate.value!.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'select_governorate_required'.tr,
-        backgroundColor: AppColors.error,
-        colorText: AppColors.white,
-      );
-      return;
-    }
-    
-    controller.register();
+        const SizedBox(height: 12),
+        LocationSelector(
+          onLocationSelected: controller.onLocationSelected, // Use the controller method directly
+        ),
+      ],
+    );
   }
-}
+
+  void _handleRegister() {
+    if (controller.registerFormKey.currentState!.validate()) {
+      // Check if location is selected
+      if (controller.selectedGovernorate.value == null || 
+          controller.selectedDelegation.value == null) {
+        Get.snackbar(
+          'error'.tr,
+          'please_select_location'.tr,
+          backgroundColor: AppColors.error,
+          colorText: AppColors.white,
+        );
+        return;
+      }
+      
+      controller.register();
+    }
+  }
   
   Widget _buildRegisterButton() {
     return Obx(() => CustomButton.primary(
@@ -463,9 +426,7 @@ void _handleRegister() {
     );
     
     if (pickedFile != null) {
-      controller.selectedAvatar.value = File(pickedFile.path);
+      controller.setAvatar(File(pickedFile.path)); // Use controller method
     }
   }
-  
-  
 }

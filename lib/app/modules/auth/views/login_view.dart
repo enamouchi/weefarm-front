@@ -119,32 +119,33 @@ class LoginView extends GetView<AuthController> {
   }
   
   Widget _buildPhoneField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        PhoneTextField(
-          controller: controller.phoneController,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'field_required'.tr;
-            }
-            if (!controller.isValidTunisianPhone(value)) {
-              return 'invalid_tunisia_phone'.tr;
-            }
-            return null;
-          },
-          onChanged: controller.formatPhoneNumber,
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      PhoneTextField(
+        controller: controller.phoneController,
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'field_required'.tr;
+          }
+          if (!controller.isValidTunisianPhone(value)) {
+            return 'invalid_tunisia_phone'.tr;
+          }
+          return null;
+        },
+        // Remove the onChanged formatter for login
+        // onChanged: controller.formatPhoneNumber,
+      ),
+      const SizedBox(height: 8),
+      Text(
+        'phone_login_info'.tr,
+        style: Get.textTheme.bodySmall?.copyWith(
+          color: AppColors.mediumGray,
         ),
-        const SizedBox(height: 8),
-        Text(
-          'phone_login_info'.tr,
-          style: Get.textTheme.bodySmall?.copyWith(
-            color: AppColors.mediumGray,
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
   
   Widget _buildContinueButton() {
     return Obx(() => CustomButton.primary(

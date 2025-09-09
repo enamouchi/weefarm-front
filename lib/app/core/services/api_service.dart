@@ -10,7 +10,7 @@ import 'dart:convert';
 class ApiService extends getx.GetxService {
   late final Dio _dio;
   // FIXED: Changed baseUrl to work with AI endpoints
-  final String baseUrl = 'http://127.0.0.1:3000/api';
+  final String baseUrl = 'http://localhost:3000/api/v1';
   
   // Get storage service instance
   StorageService get _storage => getx.Get.find<StorageService>();

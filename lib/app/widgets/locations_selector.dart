@@ -1,7 +1,9 @@
+// lib/app/widgets/locations_selector.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../core/values/app_colors.dart';
 import '../core/services/api_service.dart';
+import '../data/models/user_model.dart'; // Import the location classes from user_model
 
 class LocationSelector extends StatefulWidget {
   final Function(TunisianLocation?, TunisianDelegation?)? onLocationSelected;
@@ -298,138 +300,4 @@ class _LocationSelectorState extends State<LocationSelector> {
     }
     return null;
   }
-}
-
-// Location models to match your backend API structure
-class TunisianLocation {
-  final int id;
-  final String nameAr;
-  final String nameFr;
-  final String nameEn;
-  final String code;
-  final double lat;
-  final double lng;
-  final List<TunisianDelegation>? delegations;
-
-  TunisianLocation({
-    required this.id,
-    required this.nameAr,
-    required this.nameFr,
-    required this.nameEn,
-    required this.code,
-    required this.lat,
-    required this.lng,
-    this.delegations,
-  });
-
-  factory TunisianLocation.fromJson(Map<String, dynamic> json) {
-    return TunisianLocation(
-      id: json['id'],
-      nameAr: json['name_ar'] ?? '',
-      nameFr: json['name_fr'] ?? '',
-      nameEn: json['name_en'] ?? '',
-      code: json['code'] ?? '',
-      lat: (json['lat'] ?? 0.0).toDouble(),
-      lng: (json['lng'] ?? 0.0).toDouble(),
-      delegations: json['delegations'] != null
-          ? (json['delegations'] as List)
-              .map((del) => TunisianDelegation.fromJson(del))
-              .toList()
-          : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name_ar': nameAr,
-      'name_fr': nameFr,
-      'name_en': nameEn,
-      'code': code,
-      'lat': lat,
-      'lng': lng,
-      if (delegations != null)
-        'delegations': delegations!.map((del) => del.toJson()).toList(),
-    };
-  }
-
-  String getDisplayName(String languageCode) {
-    switch (languageCode.toLowerCase()) {
-      case 'ar':
-        return nameAr.isNotEmpty ? nameAr : nameEn;
-      case 'fr':
-        return nameFr.isNotEmpty ? nameFr : nameEn;
-      default:
-        return nameEn.isNotEmpty ? nameEn : nameFr;
-    }
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is TunisianLocation && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
-}
-
-class TunisianDelegation {
-  final int id;
-  final String nameAr;
-  final String nameFr;
-  final String nameEn;
-  final double lat;
-  final double lng;
-
-  TunisianDelegation({
-    required this.id,
-    required this.nameAr,
-    required this.nameFr,
-    required this.nameEn,
-    required this.lat,
-    required this.lng,
-  });
-
-  factory TunisianDelegation.fromJson(Map<String, dynamic> json) {
-    return TunisianDelegation(
-      id: json['id'],
-      nameAr: json['name_ar'] ?? '',
-      nameFr: json['name_fr'] ?? '',
-      nameEn: json['name_en'] ?? '',
-      lat: (json['lat'] ?? 0.0).toDouble(),
-      lng: (json['lng'] ?? 0.0).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name_ar': nameAr,
-      'name_fr': nameFr,
-      'name_en': nameEn,
-      'lat': lat,
-      'lng': lng,
-    };
-  }
-
-  String getDisplayName(String languageCode) {
-    switch (languageCode.toLowerCase()) {
-      case 'ar':
-        return nameAr.isNotEmpty ? nameAr : nameEn;
-      case 'fr':
-        return nameFr.isNotEmpty ? nameFr : nameEn;
-      default:
-        return nameEn.isNotEmpty ? nameEn : nameFr;
-    }
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is TunisianDelegation && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
 }

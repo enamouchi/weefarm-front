@@ -49,4 +49,5 @@ class Routes {
   static const String SMART_DASHBOARD = '/smart-dashboard';
   static const String AI_ASSISTANT = '/ai-assistant';
   static const String PLANT_SCANNER = '/plant-scanner';
+  
 }

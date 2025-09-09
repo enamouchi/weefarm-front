@@ -1,3 +1,4 @@
+// lib/app/data/models/user_model.dart
 import 'package:json_annotation/json_annotation.dart';
 import 'package:flutter/material.dart';
 part 'user_model.g.dart';
@@ -12,21 +13,37 @@ class UserModel {
   final UserRole role;
   final String? governorate;
   final String? municipality;
+  
+  @JsonKey(fromJson: _stringToDouble)
   final double? lat;
+  
+  @JsonKey(fromJson: _stringToDouble)
   final double? lng;
+  
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
   
   // Additional profile fields
   final String? bio;
+  
+  @JsonKey(fromJson: _stringToDouble)
   final double? farmSize;
+  
+  @JsonKey(fromJson: _stringToInt)
   final int? experience;
+  
   final List<String>? specialization;
   final List<String>? certifications;
   final bool? isVerified;
+  
+  @JsonKey(fromJson: _stringToDouble)
   final double? rating;
+  
+  @JsonKey(fromJson: _stringToInt)
   final int? reviewsCount;
+  
+  @JsonKey(fromJson: _stringToDouble)
   final double? totalSales;
   
   const UserModel({
@@ -57,6 +74,23 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
   
   Map<String, dynamic> toJson() => _$UserModelToJson(this);
+  
+  // Helper methods for type conversion
+  static double? _stringToDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+  
+  static int? _stringToInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
   
   UserModel copyWith({
     int? id,
@@ -191,48 +225,36 @@ enum UserRole {
 }
 
 @JsonSerializable()
-class LoginResponse {
-  final String message;
-  final UserModel user;
-  final AuthTokens tokens;
-  
-  const LoginResponse({
-    required this.message,
-    required this.user,
-    required this.tokens,
-  });
-  
-  factory LoginResponse.fromJson(Map<String, dynamic> json) => _$LoginResponseFromJson(json);
-  
-  Map<String, dynamic> toJson() => _$LoginResponseToJson(this);
-}
-
-@JsonSerializable()
-class AuthTokens {
-  final String accessToken;
-  final String refreshToken;
-  
-  const AuthTokens({
-    required this.accessToken,
-    required this.refreshToken,
-  });
-  
-  factory AuthTokens.fromJson(Map<String, dynamic> json) => _$AuthTokensFromJson(json);
-  
-  Map<String, dynamic> toJson() => _$AuthTokensToJson(this);
-}
-
-@JsonSerializable()
 class TunisianLocation {
   final int id;
+  
+  @JsonKey(name: 'name_ar')
   final String nameAr;
+  
+  @JsonKey(name: 'name_fr')
   final String nameFr;
+  
+  @JsonKey(name: 'name_en')
+  final String nameEn;
+  
+  final String code;
+  
+  @JsonKey(fromJson: _stringToDouble)
+  final double lat;
+  
+  @JsonKey(fromJson: _stringToDouble)
+  final double lng;
+  
   final List<TunisianDelegation>? delegations;
   
   const TunisianLocation({
     required this.id,
     required this.nameAr,
     required this.nameFr,
+    required this.nameEn,
+    required this.code,
+    required this.lat,
+    required this.lng,
     this.delegations,
   });
   
@@ -240,30 +262,92 @@ class TunisianLocation {
   
   Map<String, dynamic> toJson() => _$TunisianLocationToJson(this);
   
-  String getDisplayName(String language) {
-    return language == 'ar' ? nameAr : nameFr;
+  // Helper method for type conversion
+  static double _stringToDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
+  
+  String getDisplayName(String? languageCode) {
+    switch (languageCode?.toLowerCase()) {
+      case 'ar':
+        return nameAr.isNotEmpty ? nameAr : nameEn;
+      case 'fr':
+        return nameFr.isNotEmpty ? nameFr : nameEn;
+      default:
+        return nameEn.isNotEmpty ? nameEn : nameFr;
+    }
+  }
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TunisianLocation && other.id == id;
+  }
+  
+  @override
+  int get hashCode => id.hashCode;
 }
 
 @JsonSerializable()
 class TunisianDelegation {
   final int id;
+  
+  @JsonKey(name: 'name_ar')
   final String nameAr;
+  
+  @JsonKey(name: 'name_fr')
   final String nameFr;
-  final int governorateId;
+  
+  @JsonKey(name: 'name_en')
+  final String nameEn;
+  
+  @JsonKey(fromJson: _stringToDouble)
+  final double lat;
+  
+  @JsonKey(fromJson: _stringToDouble)
+  final double lng;
   
   const TunisianDelegation({
     required this.id,
     required this.nameAr,
     required this.nameFr,
-    required this.governorateId,
+    required this.nameEn,
+    required this.lat,
+    required this.lng,
   });
   
   factory TunisianDelegation.fromJson(Map<String, dynamic> json) => _$TunisianDelegationFromJson(json);
   
   Map<String, dynamic> toJson() => _$TunisianDelegationToJson(this);
   
-  String getDisplayName(String language) {
-    return language == 'ar' ? nameAr : nameFr;
+  // Helper method for type conversion
+  static double _stringToDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
+  
+  String getDisplayName(String? languageCode) {
+    switch (languageCode?.toLowerCase()) {
+      case 'ar':
+        return nameAr.isNotEmpty ? nameAr : nameEn;
+      case 'fr':
+        return nameFr.isNotEmpty ? nameFr : nameEn;
+      default:
+        return nameEn.isNotEmpty ? nameEn : nameFr;
+    }
+  }
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TunisianDelegation && other.id == id;
+  }
+  
+  @override
+  int get hashCode => id.hashCode;
 }

@@ -1,6 +1,6 @@
 // lib/app/modules/auth/controllers/auth_controller.dart
 import 'dart:async';
-import 'dart:io';  // Added this import for File type
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart' hide FormData, MultipartFile;
@@ -13,7 +13,8 @@ import 'package:weefarm/app/routes/app_routes.dart';
 import 'package:weefarm/app/core/services/api_service.dart';
 import 'package:weefarm/app/core/services/storage_service.dart';
 import 'package:weefarm/app/data/models/user_model.dart';
-
+import 'package:weefarm/app/widgets/locations_selector.dart';
+import 'package:weefarm/app/widgets/phone_input_field.dart'; // Import the location selector
 
 class AuthController extends GetxController {
   // Services
@@ -36,10 +37,10 @@ class AuthController extends GetxController {
   final RxBool isLoggedIn = false.obs;
   final Rx<UserModel?> currentUser = Rx<UserModel?>(null);
   
-  // Registration specific
-  final RxString selectedRole = 'citizen'.obs;
-  final Rx<String?> selectedGovernorate = Rx<String?>(null);
-  final Rx<String?> selectedDelegation = Rx<String?>(null);
+  // Registration specific - Updated to use proper location objects
+  final RxString selectedRole = 'farmer'.obs; // Changed default to farmer
+  final Rx<TunisianLocation?> selectedGovernorate = Rx<TunisianLocation?>(null);
+  final Rx<TunisianDelegation?> selectedDelegation = Rx<TunisianDelegation?>(null);
   final Rx<File?> selectedAvatar = Rx<File?>(null);
   
   // OTP timer
@@ -88,10 +89,11 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       
-      final formattedPhone = _formatPhoneForApi(phoneController.text);
+      final cleanedPhone = _cleanPhoneForApi(phoneController.text);
+      print('Requesting OTP for phone: $cleanedPhone'); // Debug log
       
       final response = await _apiService.post('/auth/request-otp', data: {
-        'phone': formattedPhone,
+        'phone': cleanedPhone,
       });
       
       if (response.statusCode == 200) {
@@ -104,6 +106,11 @@ class AuthController extends GetxController {
           backgroundColor: AppColors.primaryGreen,
           colorText: AppColors.white,
         );
+        
+        // Debug - show OTP in development
+        if (response.data['otp'] != null) {
+          print('Development OTP: ${response.data['otp']}');
+        }
       }
     } catch (e) {
       _handleError(e);
@@ -117,22 +124,25 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       
-      final formattedPhone = _formatPhoneForApi(phoneController.text);
+      final cleanedPhone = _cleanPhoneForApi(phoneController.text);
+      print('Logging in with phone: $cleanedPhone, OTP: ${otpController.text}'); // Debug log
       
       final response = await _apiService.post('/auth/verify-otp', data: {
-        'phone': formattedPhone,
+        'phone': cleanedPhone,
         'otp': otpController.text,
       });
       
       if (response.statusCode == 200) {
-        final accessToken = response.data['accessToken'] ?? response.data['token'];
+        final accessToken = response.data['accessToken'];
         final refreshToken = response.data['refreshToken'];
         final userData = response.data['user'];
+        
+        print('Login successful, tokens received'); // Debug log
         
         // Save tokens
         await _storageService.saveTokens(
           accessToken: accessToken,
-          refreshToken: refreshToken ?? '',
+          refreshToken: refreshToken,
         );
         
         // Save user data
@@ -142,6 +152,9 @@ class AuthController extends GetxController {
         // Update user state
         currentUser.value = user;
         isLoggedIn.value = true;
+        
+        // Clear OTP controller
+        otpController.clear();
         
         // Navigate to main app
         Get.offAllNamed(Routes.MAIN);
@@ -170,59 +183,100 @@ class AuthController extends GetxController {
   }
   
   // Register new user
-  Future<void> register() async {
-    try {
-      isLoading.value = true;
-      
-      // Use the prefixed FormData from dio package
-      dio.FormData formData = dio.FormData.fromMap({
-        'name': nameController.text.trim(),
-        'phone': _formatPhoneForApi(phoneController.text),
-        'email': emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-        'role': selectedRole.value,
-        'governorate': selectedGovernorate.value,
-        'delegation': selectedDelegation.value,
-      });
-      
-      // Add avatar if selected
-      if (selectedAvatar.value != null) {
+Future<void> register() async {
+  try {
+    isLoading.value = true;
+    
+    final cleanedPhone = _cleanPhoneForApi(phoneController.text);
+    print('Registering with phone: $cleanedPhone');
+    print('Selected governorate: ${selectedGovernorate.value?.id}');
+    print('Selected delegation: ${selectedDelegation.value?.id}');
+    
+    // Validate required fields
+    if (selectedGovernorate.value == null || selectedDelegation.value == null) {
+      Get.snackbar(
+        'error'.tr,
+        'please_select_location'.tr,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
+      return;
+    }
+    
+    // Create form data
+    dio.FormData formData = dio.FormData.fromMap({
+      'name': nameController.text.trim(),
+      'phone': cleanedPhone,
+      'email': emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+      'role': selectedRole.value,
+      'governorateId': selectedGovernorate.value!.id.toString(),
+      'delegationId': selectedDelegation.value!.id.toString(),
+    });
+    
+    // Add avatar if selected
+    if (selectedAvatar.value != null) {
+      try {
+        final file = selectedAvatar.value!;
+        print('Adding avatar file: ${file.path}');
+        
         formData.files.add(MapEntry(
           'avatar',
-          await dio.MultipartFile.fromFile(selectedAvatar.value!.path),
+          await dio.MultipartFile.fromFile(
+            file.path,
+            filename: file.path.split('/').last,
+          ),
         ));
-      }
-      
-      final response = await _apiService.post('/auth/register', data: formData);
-      
-      if (response.statusCode == 201) {
-        // Clear form
-        _clearRegistrationForm();
-        
-        // Go to OTP verification
-        _startOtpTimer();
-        Get.toNamed(Routes.OTP_VERIFICATION);
-        
+      } catch (fileError) {
+        print('Error adding avatar file: $fileError');
         Get.snackbar(
-          'success'.tr,
-          'registration_successful_verify_phone'.tr,
-          backgroundColor: AppColors.primaryGreen,
+          'warning'.tr,
+          'avatar_upload_failed_continuing'.tr,
+          backgroundColor: AppColors.warning,
           colorText: AppColors.white,
         );
       }
-    } catch (e) {
-      _handleError(e);
-    } finally {
-      isLoading.value = false;
     }
+    
+    final response = await _apiService.post('/auth/register', data: formData);
+    
+    if (response.statusCode == 201) {
+      print('Registration successful');
+      
+      // Start OTP timer and navigate
+      _startOtpTimer();
+      Get.toNamed(Routes.OTP_VERIFICATION);
+      
+      // Clear form after a delay to avoid controller disposal issues
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _clearRegistrationForm();
+      });
+      
+      Get.snackbar(
+        'success'.tr,
+        'registration_successful_verify_phone'.tr,
+        backgroundColor: AppColors.primaryGreen,
+        colorText: AppColors.white,
+      );
+      
+      // Debug - show OTP in development
+      if (response.data['otp'] != null) {
+        print('Development OTP: ${response.data['otp']}');
+      }
+    }
+  } catch (e) {
+    print('Registration error: $e');
+    _handleError(e);
+  } finally {
+    isLoading.value = false;
   }
-  
+}
   // Resend OTP
   Future<void> resendOTP() async {
     try {
-      final formattedPhone = _formatPhoneForApi(phoneController.text);
+      final cleanedPhone = _cleanPhoneForApi(phoneController.text);
       
-      final response = await _apiService.post('/auth/resend-otp', data: {
-        'phone': formattedPhone,
+      final response = await _apiService.post('/auth/request-otp', data: {
+        'phone': cleanedPhone,
       });
       
       if (response.statusCode == 200) {
@@ -234,6 +288,11 @@ class AuthController extends GetxController {
           backgroundColor: AppColors.primaryGreen,
           colorText: AppColors.white,
         );
+        
+        // Debug - show OTP in development
+        if (response.data['otp'] != null) {
+          print('Development OTP: ${response.data['otp']}');
+        }
       }
     } catch (e) {
       _handleError(e);
@@ -253,56 +312,104 @@ class AuthController extends GetxController {
       emailController.clear();
       otpController.clear();
       
+      // Clear registration form
+      _clearRegistrationForm();
+      
       Get.offAllNamed(Routes.WELCOME);
     } catch (e) {
       print('Logout error: $e');
     }
   }
   
-  // Helper methods
-  String _formatPhoneForApi(String phone) {
-    return phone.replaceAll(RegExp(r'\D'), ''); // Remove non-digits
-  }
-  
-  String getFormattedPhone(String phone) {
-    final cleaned = phone.replaceAll(RegExp(r'\D'), '');
-    if (cleaned.startsWith('216')) {
-      return '+216 ${cleaned.substring(3, 5)} ${cleaned.substring(5, 8)} ${cleaned.substring(8)}';
-    }
-    return phone;
-  }
-  
-  void formatPhoneNumber(String value) {
-    // Auto-format Tunisian phone numbers
-    String cleaned = value.replaceAll(RegExp(r'\D'), '');
+  // ---------------- PHONE HELPERS ----------------
+
+  /// Clean phone number to just digits (remove +216 prefix if present)
+  String _cleanPhoneForApi(String phone) {
+    String cleaned = phone.replaceAll(RegExp(r'\D'), '');
     
+    // Remove Tunisia country code if present
     if (cleaned.startsWith('216')) {
       cleaned = cleaned.substring(3);
     }
     
-    if (cleaned.length >= 2) {
-      String formatted = '+216 ';
-      if (cleaned.length >= 2) {
-        formatted += '${cleaned.substring(0, 2)} ';
-      }
-      if (cleaned.length >= 5) {
-        formatted += '${cleaned.substring(2, 5)} ';
-      }
-      if (cleaned.length >= 8) {
-        formatted += cleaned.substring(5, 8);
-      }
-      
-      phoneController.text = formatted;
-      phoneController.selection = TextSelection.fromPosition(
-        TextPosition(offset: formatted.length),
-      );
+    return cleaned;
+  }
+
+  /// Format a phone into +216 XX XXX XXX (Tunisian style) for display
+  String getFormattedPhone(String phone) {
+    final cleaned = _cleanPhoneForApi(phone);
+
+    if (cleaned.length == 8) {
+      return '+216 ${cleaned.substring(0, 2)} ${cleaned.substring(2, 5)} ${cleaned.substring(5)}';
     }
+
+    return phone; // fallback
+  }
+
+  /// Auto-format while typing inside TextField
+  void formatPhoneNumber(String value) {
+  // Don't format if user is deleting (value is getting shorter)
+  if (value.length < phoneController.text.length) {
+    return;
   }
   
-  bool isValidTunisianPhone(String phone) {
-    final cleaned = phone.replaceAll(RegExp(r'\D'), '');
-    return RegExp(r'^216[0-9]{8}$').hasMatch(cleaned);
+  String cleaned = value.replaceAll(RegExp(r'\D'), '');
+
+  // Remove country code if already included
+  if (cleaned.startsWith('216')) {
+    cleaned = cleaned.substring(3);
   }
+
+  // Limit to 8 digits for Tunisian numbers
+  if (cleaned.length > 8) {
+    cleaned = cleaned.substring(0, 8);
+  }
+
+  // Only format if we have a meaningful change
+  String formatted = '+216 ';
+  if (cleaned.length >= 2) {
+    formatted += '${cleaned.substring(0, 2)} ';
+  }
+  if (cleaned.length >= 5) {
+    formatted += '${cleaned.substring(2, 5)} ';
+  }
+  if (cleaned.length >= 8) {
+    formatted += cleaned.substring(5, 8);
+  } else if (cleaned.length > 5) {
+    formatted += cleaned.substring(5);
+  } else if (cleaned.length > 2) {
+    formatted += cleaned.substring(2);
+  } else if (cleaned.length > 0) {
+    formatted += cleaned;
+  }
+
+  // Only update if the formatted value is different
+  if (phoneController.text != formatted.trim()) {
+    phoneController.text = formatted.trim();
+    phoneController.selection = TextSelection.fromPosition(
+      TextPosition(offset: phoneController.text.length),
+    );
+  }
+}
+  
+  bool isValidTunisianPhone(String phone) {
+    return phoneController.isValidTunisianPhone; // Use the extension method
+  }
+  
+  // ---------------- LOCATION HELPERS ----------------
+  
+  void onLocationSelected(TunisianLocation? governorate, TunisianDelegation? delegation) {
+    selectedGovernorate.value = governorate;
+    selectedDelegation.value = delegation;
+    print('Location selected - Gov: ${governorate?.id}, Del: ${delegation?.id}'); // Debug log
+  }
+  
+  void setAvatar(File? file) {
+    selectedAvatar.value = file;
+    print('Avatar selected: ${file?.path}'); // Debug log
+  }
+  
+  // ---------------- PRIVATE HELPERS ----------------
   
   void _startOtpTimer() {
     otpTimer.value = 60; // 60 seconds
@@ -319,7 +426,7 @@ class AuthController extends GetxController {
   void _clearRegistrationForm() {
     nameController.clear();
     emailController.clear();
-    selectedRole.value = 'citizen';
+    selectedRole.value = 'farmer';
     selectedGovernorate.value = null;
     selectedDelegation.value = null;
     selectedAvatar.value = null;
@@ -328,9 +435,23 @@ class AuthController extends GetxController {
   void _handleError(dynamic error) {
     String message = 'something_went_wrong'.tr;
     
+    print('Error details: $error'); // Debug log
+    
     if (error is DioException) {
-      if (error.response?.data != null && error.response?.data['message'] != null) {
-        message = error.response!.data['message'];
+      print('Dio error response: ${error.response?.data}'); // Debug log
+      
+      if (error.response?.data != null) {
+        if (error.response!.data is Map && error.response!.data['error'] != null) {
+          message = error.response!.data['error'];
+        } else if (error.response!.data is Map && error.response!.data['message'] != null) {
+          message = error.response!.data['message'];
+        } else if (error.response!.data is Map && error.response!.data['errors'] != null) {
+          // Handle validation errors
+          final errors = error.response!.data['errors'] as List;
+          if (errors.isNotEmpty) {
+            message = errors.first['msg'] ?? errors.first.toString();
+          }
+        }
       } else {
         switch (error.response?.statusCode) {
           case 400:
@@ -357,6 +478,7 @@ class AuthController extends GetxController {
       message,
       backgroundColor: AppColors.error,
       colorText: AppColors.white,
+      duration: const Duration(seconds: 4),
     );
   }
 }

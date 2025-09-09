@@ -9,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
   # State Management & Routing
   get: ^4.6.6
   get_storage: ^2.1.1

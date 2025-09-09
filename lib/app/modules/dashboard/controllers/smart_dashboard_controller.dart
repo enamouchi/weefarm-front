@@ -1,3 +1,4 @@
+// 1. lib/modules/dashboard/controllers/smart_dashboard_controller.dart
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/services/api_service.dart';
@@ -12,64 +13,50 @@ class SmartDashboardController extends GetxController {
 
   @override
   void onInit() {
-    refreshData();
     super.onInit();
+    refreshData();
   }
 
   Future<void> refreshData() async {
     try {
       isLoading.value = true;
       
-      // FIXED: Using Dio - response.data contains the JSON directly
       final response = await _apiService.get('/analytics/dashboard');
-      
-      // FIXED: Get data from response.data (Dio way)
       final data = response.data as Map<String, dynamic>;
       
-      print('🔍 Dashboard response: $data');
-      
-      // Parse stats
-      final statsData = data['stats'] as Map<String, dynamic>? ?? {};
-      stats.value = DashboardStats.fromJson(statsData);
-      
-      // Parse insights
-      final insightsData = data['insights'] as List?;
-      if (insightsData != null) {
-        insights.value = insightsData.map((item) => item.toString()).toList();
-      } else {
-        insights.value = [];
+      if (data['success'] == true) {
+        // Parse stats
+        final statsData = data['stats'] as Map<String, dynamic>? ?? {};
+        stats.value = DashboardStats.fromJson(statsData);
+        
+        // Parse insights
+        final insightsData = data['insights'] as List?;
+        if (insightsData != null) {
+          insights.value = insightsData.map((item) => item.toString()).toList();
+        }
+        
+        // Parse weekly data
+        final chartsData = data['charts'] as Map<String, dynamic>?;
+        final weeklyRevenue = chartsData?['weeklyRevenue'] as List?;
+        
+        if (weeklyRevenue != null) {
+          weeklyData.value = weeklyRevenue
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList();
+        }
+        
+        print('Dashboard loaded: ${stats.value.completedOrders} orders');
       }
-      
-      // Parse weekly data
-      final chartsData = data['charts'] as Map<String, dynamic>?;
-      final weeklyRevenue = chartsData?['weeklyRevenue'] as List?;
-      
-      if (weeklyRevenue != null) {
-        weeklyData.value = weeklyRevenue
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-      } else {
-        weeklyData.value = [];
-      }
-      
-      print('✅ Dashboard data loaded successfully');
-      print('📊 Stats: ${stats.value.completedOrders} orders, ${stats.value.revenue} revenue');
-      print('💡 Insights: ${insights.length} items');
-      print('📈 Weekly data: ${weeklyData.length} points');
       
     } catch (e) {
-      print('❌ Dashboard error: $e');
-      
+      print('Dashboard error: $e');
       Get.snackbar(
-        'تحميل البيانات التجريبية', 
-        'سيتم عرض بيانات تجريبية للعرض',
+        'تحميل البيانات التجريبية',
+        'سيتم عرض بيانات تجريبية للمراجعة',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Get.theme.colorScheme.secondary,
+        backgroundColor: Get.theme.colorScheme.secondary.withOpacity(0.8),
         colorText: Get.theme.colorScheme.onSecondary,
-        duration: Duration(seconds: 3),
       );
-      
-      // Load demo data on error
       _loadDemoData();
     } finally {
       isLoading.value = false;
@@ -77,69 +64,49 @@ class SmartDashboardController extends GetxController {
   }
 
   void _loadDemoData() {
-    print('📋 Loading demo dashboard data...');
-    
     stats.value = DashboardStats(
-      completedOrders: 25,
-      pendingOrders: 5,
-      totalProducts: 12,
-      revenue: 1250.50,
+      completedOrders: 28,
+      pendingOrders: 4,
+      totalProducts: 15,
+      revenue: 2845.50,
     );
     
     insights.value = [
-      'مرحباً بك في لوحة التحكم الذكية! 📊',
-      'بياناتك تظهر نشاطاً جيداً في المزرعة 🌱',
-      'معدل إتمام الطلبات ممتاز! 🎉',
-      'إيراداتك في نمو مستمر! 📈',
+      'مرحبا بك في WeeFarm - السوق الزراعي التونسي الذكي!',
+      'معدل إتمام الطلبات ممتاز: 87.5%',
+      'منتجاتك الزراعية تحقق إقبالا جيدا من المشترين',
+      'نصيحة: راجع أسعارك مع الأسعار السائدة في السوق',
     ];
     
     weeklyData.value = [
-      {'_id': 1, 'revenue': 120.0, 'orders': 3},
-      {'_id': 2, 'revenue': 250.0, 'orders': 7},
-      {'_id': 3, 'revenue': 180.0, 'orders': 4},
-      {'_id': 4, 'revenue': 320.0, 'orders': 9},
-      {'_id': 5, 'revenue': 290.0, 'orders': 8},
-      {'_id': 6, 'revenue': 410.0, 'orders': 12},
-      {'_id': 7, 'revenue': 380.0, 'orders': 10},
+      {'_id': 1, 'revenue': 420.75, 'orders': 6},
+      {'_id': 2, 'revenue': 385.50, 'orders': 5},
+      {'_id': 3, 'revenue': 512.25, 'orders': 8},
+      {'_id': 4, 'revenue': 298.00, 'orders': 4},
+      {'_id': 5, 'revenue': 645.75, 'orders': 9},
+      {'_id': 6, 'revenue': 378.25, 'orders': 6},
+      {'_id': 7, 'revenue': 205.00, 'orders': 3},
     ];
-    
-    print('✅ Demo data loaded successfully');
   }
 
   List<FlSpot> getChartSpots() {
-    if (weeklyData.isEmpty) {
-      print('⚠️ No weekly data for chart');
-      return [];
-    }
+    if (weeklyData.isEmpty) return [];
     
-    final spots = weeklyData.asMap().entries.map((entry) {
+    return weeklyData.asMap().entries.map((entry) {
       final revenue = entry.value['revenue'];
       double revenueValue = 0.0;
       
-      if (revenue is int) {
+      if (revenue is num) {
         revenueValue = revenue.toDouble();
-      } else if (revenue is double) {
-        revenueValue = revenue;
       } else if (revenue is String) {
         revenueValue = double.tryParse(revenue) ?? 0.0;
       }
       
       return FlSpot(entry.key.toDouble(), revenueValue);
     }).toList();
-    
-    print('📈 Chart spots: ${spots.length} points');
-    return spots;
   }
 
-  // Manual refresh method for pull-to-refresh
-  Future<void> onRefresh() async {
-    await refreshData();
-  }
-
-  // Force demo data for testing
-  void loadDemoData() {
-    _loadDemoData();
-  }
+  Future<void> onRefresh() async => await refreshData();
 }
 
 class DashboardStats {
@@ -166,7 +133,7 @@ class DashboardStats {
   
   static int _parseInt(dynamic value) {
     if (value is int) return value;
-    if (value is double) return value.toInt();
+    if (value is double) return value.round();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
   }
@@ -178,8 +145,11 @@ class DashboardStats {
     return 0.0;
   }
 
-  @override
-  String toString() {
-    return 'DashboardStats(completed: $completedOrders, pending: $pendingOrders, products: $totalProducts, revenue: $revenue)';
+  double get completionRate {
+    final total = completedOrders + pendingOrders;
+    if (total == 0) return 0.0;
+    return (completedOrders / total) * 100;
   }
+
+  String get formattedRevenue => '${revenue.toStringAsFixed(2)} د.ت';
 }
